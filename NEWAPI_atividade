@@ -1,0 +1,130 @@
+# Crie um programa que:
+#* Crie um menu interativo onde o usuário pode ficar fazendo consultas de noticias
+# * Pergunte ao usuário um tema de noticia
+# *Pergunte quantas noticias ele quer buscar sobre o tema, lembre de fazer um limitador.
+# *Busque as N noticias mais recentes sobre o tema usando a API da NeWSAPI
+# * Armazene o histórico de temas que o usuário buscou e ao sair do menu, apresente no final quaIS FORAM AS PALAVRAS BUSCADAS E QUANTAS NOTÍCIAS FORAM BUSCADAS AO TOTAL
+# Faça o envio pelo commit do github
+
+
+import requests
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+
+# Função para buscar notícias na internet usando a NewsAPI
+def fetch_news(api_key, topic, limit):
+    """
+    Busca notícias na API da NewsAPI com base no tema fornecido.
+    
+    Parâmetros:
+    - api_key: Sua chave de acesso à NewsAPI.
+    - topic: O tema sobre o qual deseja buscar notícias.
+    - limit: O número máximo de notícias a serem buscadas (até 10).
+
+    Retorna:
+    - Uma lista de artigos (notícias) encontrados ou uma lista vazia se algo deu errado.
+    """
+    url = "https://newsapi.org/v2/everything"  # URL da API para buscar notícias
+    params = {
+        "q": topic,         # Tema da notícia
+        "pageSize": limit,  # Limite de notícias
+        "apiKey":api_key,  # Chave da API
+    }
+    response = requests.get(url, params=params)  # Faz a solicitação à API
+    if response.status_code == 200:
+        # Retorna os artigos encontrados
+        return response.json().get("articles", [])
+    else:
+        # Exibe uma mensagem de erro se algo deu errado
+        print("Erro ao buscar as notícias. Verifique sua conexão e API Key.")
+        return []
+
+# Função para exibir as notícias encontradas
+def display_news(articles):
+    """
+    Exibe as notícias encontradas de forma organizada.
+
+    Parâmetros:
+    - articles: Lista de artigos (notícias) buscados na API.
+
+    Retorna:
+    - Nada. Apenas exibe as notícias no terminal.
+    """
+    if not articles:
+        print("Nenhuma notícia encontrada para o tema fornecido.")
+        return
+
+    print("\nNotícias encontradas:")
+    for i, article in enumerate(articles, 1):
+        # Obtém as informações da notícia ou usa um valor padrão se estiver vazio
+        title = article.get("title", "Sem título")
+        source = article.get("source", {}).get("name", "Fonte desconhecida")
+        author = article.get("author", "Autor desconhecido")
+        # Exibe as informações da notícia
+        print(f"{i}. Título: {title}")
+        print(f"   Fonte: {source}")
+        print(f"   Autor: {author}\n")
+
+# Função principal que controla todo o programa
+def main():
+    """
+    Controla o menu interativo onde o usuário pode buscar notícias
+    e ver o histórico de buscas realizadas.
+
+    Parâmetros:
+    - Nenhum.
+
+    Retorna:
+    - Nada. Apenas executa o programa.
+    """
+    api_key = os.getenv ("API_KEY_NEW")   # Substitua pela sua chave da NewsAPI
+    history = []  # Lista para armazenar o histórico de buscas
+
+    print("Bem-vindo ao Menu Interativo de Notícias!")
+    while True:
+        # Exibe as opções do menu
+        print("\nEscolha uma opção:")
+        print("1. Buscar notícias")
+        print("2. Sair")
+        choice = input("Digite sua escolha: ")
+
+        if choice == "1":
+            # Pergunta ao usuário sobre o tema da notícia
+            topic = input("Digite o tema da notícia: ")
+            while True:
+                try:
+                    # Pergunta quantas notícias o usuário deseja buscar
+                    limit = int(input("Quantas notícias você quer buscar (máximo 10)? "))
+                    if limit < 1 or limit > 10:
+                        raise ValueError  # Gera um erro se o número for inválido
+                    break
+                except ValueError:
+                    # Mostra uma mensagem de erro se o número for inválido
+                    print("Por favor, insira um número válido entre 1 e 10.")
+
+            # Busca as notícias e exibe os resultados
+            articles = fetch_news(api_key, topic, limit)
+            display_news(articles)
+            # Adiciona o tema e o número de notícias ao histórico
+            history.append((topic, len(articles)))
+
+        elif choice == "2":
+            # Mostra o resumo do histórico de buscas
+            print("\nResumo do Histórico:")
+            total_news = 0
+            for topic, count in history:
+                print(f"Tema: {topic} - Notícias buscadas: {count}")
+                total_news += count
+            print(f"Total de notícias buscadas: {total_news}")
+            print("Saindo do sistema. Até mais!")
+            break
+
+        else:
+            # Mensagem para escolhas inválidas
+            print("Opção inválida. Tente novamente.")
+
+# Verifica se o programa está sendo executado diretamente
+if __name__ == "__main__":
+    main()
